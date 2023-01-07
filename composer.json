@@ -1,0 +1,17 @@
+{
+    "name": "kt23/attendence_app",
+    "description": "...",
+    "type": "project",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "el-mubarok",
+            "email": "mubarok13@gmail.com"
+        }
+    ],
+    "require": {
+        "nyholm/psr7": "^1.5",
+        "guzzlehttp/guzzle": "^7.5",
+        "norkunas/onesignal-php-api": "^2.10"
+    }
+}
