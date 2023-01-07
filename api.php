@@ -222,6 +222,16 @@ if(isset($_GET['generate'])){
           return true;
         }
 
+        // get latest inserted id
+        $lastId = DB::lastInsertId();
+        // insert user with role user into
+        // session_detail table
+        $result = DB::run(
+          "INSERT INTO session_detail (attendance_session_id, user_id)
+            SELECT ?, id FROM user WHERE role='user'", 
+          [ $lastId ]
+        );
+
         echo json_encode([
           "code" => 200,
           "data" => [
