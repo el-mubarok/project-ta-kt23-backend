@@ -351,18 +351,29 @@ if(isset($_GET['generate'])){
         )->fetch();
 
         if($isUserAvail){
-          echo responseError(401, 200);
-          return true;
+          // check is on_time and late 0 or 1
+          if($isUserAvail['present_on_time'] == 0 && 
+            $isUserAvail['present_late'] == 0){
+            // do nothing
+          }else {
+            echo responseError(401, 200);
+            return true;
+          }
         }
 
         // insert session_detail
+        // $sessionDetailStatement = DB::prepare(
+        //   "INSERT INTO session_detail VALUES (NULL, ?, ?, ?, ?, NULL)"
+        // );
         $sessionDetailStatement = DB::prepare(
-          "INSERT INTO session_detail VALUES (NULL, ?, ?, ?, ?, NULL)"
+          "UPDATE session_detail SET present_on_time=?, present_late=?
+          WHERE attendance_session_id=? AND user_id=?"
         );
         $sessionDetailStatementResult = $sessionDetailStatement->execute([
-          $sessionId, $userId,
           $isLate ? 0 : 1,
           $isLate ? 1 : 0,
+          $sessionId, 
+          $userId,
         ]);
   
         // update attendance_session counter
@@ -436,7 +447,6 @@ if(isset($_GET['generate'])){
       }
     }
 
-
     $selectedColumn = implode(',', [
       "id", "full_name", "role", "created_at",
       "updated_at"
@@ -489,4 +499,70 @@ if(isset($_GET['generate'])){
       echo responseError(403, 400, "wrong username/password");
     }
   }
-} 
+}else if(isset($_GET['attendance_info'])){
+  if(isset($_GET['user_id'])){
+    $userId = $_GET['user_id'];
+
+    $data = DB::run(
+      'SELECT * FROM user_attendance_by_user_id WHERE user_id=?', 
+      [$userId]
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+      "code" => 200,
+      "data" => $data,
+      "message" => "user attendance info (all)"
+    ], JSON_PRETTY_PRINT);
+  }else{
+    echo responseError();
+  }
+}else if(isset($_GET['user_detail'])){
+  if(isset($_GET['user_id'])){
+    $userId = $_GET['user_id'];
+
+    $statement = DB::run(
+      "SELECT * FROM user WHERE id=?",
+      [$userId]
+    );
+    $data = $statement->fetch();
+
+    unset($data["password"]);
+    unset($data["messaging_id"]);
+    unset($data["device_id"]);
+
+    echo json_encode([
+      "code" => 200,
+      "data" => $data,
+      "message" => "data user"
+    ], JSON_PRETTY_PRINT);
+  }else{
+    echo responseError();
+  }
+}else if(isset($_GET['reset_password'])){
+  if(isset($_POST['user_id']) && 
+    isset($_POST['password']) && 
+    isset($_POST['device_id'])){
+    $password = password_hash(
+      $_POST['password'], 
+      PASSWORD_BCRYPT,
+    );
+    $userId = $_POST['user_id'];
+    $deviceId = $_POST['device_id'];
+
+    $result = DB::run(
+      "UPDATE user SET password=? WHERE id=? AND device_id=?", 
+      [$password, $userId, $deviceId]
+    )->rowCount();
+
+    if($result == 1){
+      echo json_encode([
+        "code" => 200,
+        "message" => "password updated"
+      ], JSON_PRETTY_PRINT);
+    }else{
+      echo responseError();
+    }
+  }else{
+    echo responseError();
+  }
+}
