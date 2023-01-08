@@ -477,6 +477,28 @@ if(isset($_GET['generate'])){
       }
     }
 
+    // check is device id registered
+    $checkDeviceId = DB::run(
+      "SELECT * FROM user
+      WHERE username=?
+      AND device_id=?
+      AND role=?",
+      [
+        $data['username'],
+        $data['device_id'],
+        $data['role']
+      ]
+    )->fetch();
+    if($checkDeviceId['device_id'] == null){
+      // register device id
+      $updatedDeviceId = DB::run(
+        "UPDATE user 
+        SET device_id=?
+        WHERE username=?",
+        [$data['device_id'], $data['username']]
+      );
+    }
+
     $selectedColumn = implode(',', [
       "id", "full_name", "role", "created_at",
       "updated_at"
@@ -518,6 +540,18 @@ if(isset($_GET['generate'])){
         [$data['device_id']]
       );
 
+      // update messaging_id
+      if($data['role'] == 'admin'){
+        $messagingId = $_POST['messaging_id'];
+
+        $updatedMessagingId = DB::run(
+          "UPDATE user 
+          SET messaging_id=?
+          WHERE id=?",
+          [$messagingId, $result['id']]
+        );
+      }
+
       echo json_encode([
         "code" => 200,
         "data" => $result,
@@ -528,6 +562,8 @@ if(isset($_GET['generate'])){
       updateAttempt($data['device_id']);
       echo responseError(403, 400, "wrong username/password");
     }
+  }else{
+    echo responseError();
   }
 }else if(isset($_GET['attendance_info'])){
   if(isset($_GET['user_id'])){
@@ -595,4 +631,14 @@ if(isset($_GET['generate'])){
   }else{
     echo responseError();
   }
+}else if(isset($_GET['session_history'])){
+  $data = DB::run(
+    'SELECT * FROM attendance_session'
+  )->fetchAll(PDO::FETCH_ASSOC);
+
+  echo json_encode([
+    "code" => 200,
+    "data" => $data,
+    "message" => "session history info (all)"
+  ], JSON_PRETTY_PRINT);
 }

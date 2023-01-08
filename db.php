@@ -1,15 +1,15 @@
 <?php
-// define('DB_HOST', 'localhost');
-// define('DB_NAME', 'self_project_attendance');
-// define('DB_USER', 'root');
-// define('DB_PASS', '');
-// define('DB_CHAR', 'utf8');
-
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'squidwar_kt23');
-define('DB_USER', 'squidwar_kt23');
-define('DB_PASS', 'pdszNTm4H[J9');
+define('DB_NAME', 'self_project_attendance');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_CHAR', 'utf8');
+
+// define('DB_HOST', 'localhost');
+// define('DB_NAME', 'squidwar_kt23');
+// define('DB_USER', 'squidwar_kt23');
+// define('DB_PASS', 'pdszNTm4H[J9');
+// define('DB_CHAR', 'utf8');
 
 class DB
 {
