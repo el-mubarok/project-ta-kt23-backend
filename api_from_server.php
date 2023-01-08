@@ -23,7 +23,7 @@ function sendNotification(
   // 
   $config = new Config(
     '6f54bdf3-5bd8-4d55-86f8-32f19d342abe', 
-    'ZjMxNmMwNzAtMDhkZi00MWJlLTgwY2ItNzZiY2M5NDE2Mzk0',
+    'ZjMxNmMwNzAtMDhkZi00MWJlLTgwY2ItNzZiY2M5NDE2Mzk0'
   );
   $httpClient = new Client();
   $requestFactory = $streamFactory = new Psr17Factory();
@@ -262,7 +262,7 @@ if(isset($_GET['generate'])){
       ], JSON_PRETTY_PRINT);
       return true;
     }
-
+    
     $encodedDate = encryptCode($existedSession['session_date']);
 
     echo json_encode([
@@ -325,16 +325,16 @@ if(isset($_GET['generate'])){
   if(isset($_POST["data"]) && isset($_POST["user_id"])){
     $date = decryptCode($_POST["data"]);
     $userId = $_POST['user_id'];
-
-    print_r($date);
+    
+    // print_r($date);
 
     // if decoded $date is same as today date
     if(date("Y-m-d", strtotime($date)) == date("Y-m-d")){
       $currentSession = (object) DB::run(
         "SELECT * FROM attendance_session WHERE session_date=?", [ $date ]
       )->fetch();
-
-      print_r($currentSession);
+      
+    //   print_r($currentSession);
   
       // is date exists on attendance_session
       if($currentSession){
@@ -343,8 +343,8 @@ if(isset($_GET['generate'])){
           "SELECT * FROM user WHERE id=?", 
           [ $currentSession->admin_id ]
         )->fetch();
-
-        print_r($adminData);
+        
+        // print_r($adminData);
 
         $sessionId = $currentSession->id;
         $onTimePresent = $currentSession->present_on_time;
@@ -379,6 +379,8 @@ if(isset($_GET['generate'])){
         $isUserAvail = DB::run(
           "SELECT * FROM session_detail WHERE user_id=?", [ $userId ]
         )->fetch();
+        
+        // print_r($isUserAvail);
 
         if($isUserAvail){
           // check is on_time and late 0 or 1
@@ -475,6 +477,28 @@ if(isset($_GET['generate'])){
         echo responseError(404, 401, "please retry within 5 minutes");
         return true;
       }
+    }
+
+    // check is device id registered
+    $checkDeviceId = DB::run(
+      "SELECT * FROM user
+      WHERE username=?
+      AND device_id=?
+      AND role=?",
+      [
+        $data['username'],
+        $data['device_id'],
+        $data['role']
+      ]
+    )->fetch();
+    if($checkDeviceId['device_id'] == null){
+      // register device id
+      $updatedDeviceId = DB::run(
+        "UPDATE user 
+        SET device_id=?
+        WHERE username=?",
+        [$data['device_id'], $data['username']]
+      );
     }
 
     $selectedColumn = implode(',', [
@@ -574,7 +598,7 @@ if(isset($_GET['generate'])){
     isset($_POST['device_id'])){
     $password = password_hash(
       $_POST['password'], 
-      PASSWORD_BCRYPT,
+      PASSWORD_BCRYPT
     );
     $userId = $_POST['user_id'];
     $deviceId = $_POST['device_id'];
