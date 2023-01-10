@@ -189,16 +189,116 @@ function updateAttempt($deviceId) {
   return $attempt;
 }
 
+function presentOut($currentSession) {
+  $outDate = date(
+    'Y-m-d H:i:s',
+    strtotime($currentSession['out_at'])
+  );
+  $now = date("Y-m-d H:i:s");
+  $data = [
+    "status" => false
+  ];
+
+  if($now >= $outDate){
+    $data["status"] = true;
+    $data["qr_code"] = encryptCode(
+      $currentSession['out_at']
+    );
+  }
+
+  return (object) $data;
+}
+
+function scanPresentOut($decodedDate, $userId) {
+  $currentSession = (object) DB::run(
+    "SELECT * FROM attendance_session WHERE out_at=?", 
+    [ $decodedDate ]
+  )->fetch();
+
+  // check is scan for home attend
+  $_now = date("Y-m-d H:i:s");
+  $_sessionOutAt = date(
+    "Y-m-d H:i:s", 
+    strtotime($currentSession->out_at)
+  );
+  $_sessionOutAtEncoded = encryptCode(
+    $currentSession->out_at
+  );
+  $encodedDate = encryptCode($decodedDate);
+  $data = [
+    "status" => false
+  ];
+  $sessionId = $currentSession->id;
+
+  if($_now >= $_sessionOutAt){
+    $isUserAvail = DB::run(
+      "SELECT * FROM session_detail WHERE user_id=?", [ $userId ]
+    )->fetch();
+    
+    if($isUserAvail){
+      if($isUserAvail['present_out_at'] != null){
+        $data["status"] = true;
+        $data["data"] = responseError(401, 200);
+        return (object) $data;
+      }
+    }
+
+    $adminData = (object) DB::run(
+      "SELECT * FROM user WHERE id=?", 
+      [ $currentSession->admin_id ]
+    )->fetch();
+
+    $updatedAttendanceSession = DB::run(
+      "UPDATE session_detail 
+      SET present_out_at=?
+      WHERE attendance_session_id=? AND user_id=?",
+      [ $_now, $sessionId, $userId ]
+    );
+
+    $notificationResult = sendNotification(
+      NOTIFICATION_SILENT,
+      $adminData->messaging_id,
+      [
+        "qr_code" => $encodedDate,
+        "present_on_time" => $currentSession->present_on_time,
+        "present_late" => $currentSession->present_late,
+        "created" => date("Y-m-d H:i:s")
+      ]
+    );
+
+    $data["status"] = true;
+    $data["data"] = json_encode([
+      "code" => 200,
+      "data" => [
+        "notification" => $notificationResult,
+        "additional_data" => [
+          "qr_code" => $_sessionOutAtEncoded,
+          "present_on_time" => $currentSession->present_on_time,
+          "present_late" => $currentSession->present_late,
+          "created" => date("Y-m-d H:i:s")
+        ]
+      ],
+      "message" => "scan done"
+    ], JSON_PRETTY_PRINT);
+  }else{
+    $data["status"] = false;
+  }
+  return (object) $data;
+}
+
 if(isset($_GET['generate'])){
-  // echo generateAttendanceCode();
-  // write to db
   if(isset($_POST["date"]) && isset($_POST["admin_id"])){
+    $presentOutAfter = 7;
     $date = $_POST["date"];
     $dateOnly = date("Y-m-d", strtotime($date))."%";
     // $dateOnly = "2022-03-03%";
     $date = date("Y-m-d H:i:s", strtotime($date));
     $dateEnd = strtotime("$date + 30 minute");
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
+    $dateEndSession = strtotime("$dateEnd + 10 minute");
+    $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
+    $dateOut = strtotime("$date + 7 hour");
+    $dateOut = date("Y-m-d H:i:s", $dateOut);
     $admin = $_POST["admin_id"];
     $encodedDate = encryptCode($date);
 
@@ -210,8 +310,8 @@ if(isset($_GET['generate'])){
     // )->fetch();
 
     $existedSession = DB::prepare(
-      "SELECT * FROM attendance_session WHERE session_date LIKE :date
-      ORDER BY session_date DESC" 
+      "SELECT * FROM attendance_session WHERE session_date 
+      LIKE :date ORDER BY session_date DESC" 
     );
     $existedSession->bindParam(':date', $dateOnly);
     $existedSession->execute();
@@ -228,11 +328,11 @@ if(isset($_GET['generate'])){
     // }
     if(!$existedSession){
       $statement = DB::prepare(
-        "INSERT INTO attendance_session VALUES (NULL, ?, ?, ?, 0, 0, NULL, NUll)"
+        "INSERT INTO attendance_session VALUES (NULL, ?, ?, ?, 0, 0, ?, NULL, NUll)"
       );
   
       if(!$statement->execute([
-        $admin, $date, $dateEnd
+        $admin, $date, $dateEnd, $dateOut
       ])){
         echo json_encode([
           "code" => 401,
@@ -256,11 +356,55 @@ if(isset($_GET['generate'])){
         "data" => [
           "qr_code" => $encodedDate,
           "start" => $date,
-          "end" => $dateEnd
+          "end" => $dateEnd,
+          "end_session" => $dateEndSession
         ],
         "message" => "session created"
       ], JSON_PRETTY_PRINT);
       return true;
+    }else{
+      // check is session is end
+      // session end after 1 minute from session_date_end
+      $sessionEndDate = strtotime(
+        $existedSession['session_date_end']." + 10 minute"
+      );
+      $sessionEndDate = date(
+        "Y-m-d H:i:s", $sessionEndDate
+      );
+      $dateEndSession = $sessionEndDate;
+      $now = date("Y-m-d H:i:s");
+      $startSession = date(
+        "Y-m-d H:i:s",
+        strtotime($existedSession['session_date'])
+      );
+      $_dateOut = date(
+        "Y-m-d H:i:s",
+        strtotime($existedSession['out_at'])
+      );
+
+      if($now >= $sessionEndDate && $now <= $_dateOut){
+        // && $now < $dateOut
+        // print_r($dateOut);
+        // var_dump($now > $sessionEndDate && $now < $dateOut);
+        echo responseError(404, 401, "session has ended");
+        return true;
+      }
+
+      // check is present out session
+      $isPresentOut = presentOut($existedSession);
+
+      if($isPresentOut->status){
+        echo json_encode([
+          "code" => 201,
+          "data" => [
+            "qr_code" => $isPresentOut->qr_code,
+            "start_date" => $now
+          ],
+          "message" => "home attendance session created"
+        ], JSON_PRETTY_PRINT);
+
+        return true;
+      }
     }
 
     $encodedDate = encryptCode($existedSession['session_date']);
@@ -270,7 +414,8 @@ if(isset($_GET['generate'])){
       "data" => [
         "qr_code" => $encodedDate,
         "start" => $existedSession["session_date"],
-        "end" => $existedSession["session_date_end"]
+        "end" => $existedSession["session_date_end"],
+        "end_session" => $dateEndSession,
       ],
       "message" => "session created"
     ], JSON_PRETTY_PRINT);
@@ -326,7 +471,7 @@ if(isset($_GET['generate'])){
     $date = decryptCode($_POST["data"]);
     $userId = $_POST['user_id'];
 
-    print_r($date);
+    // print_r($date);
 
     // if decoded $date is same as today date
     if(date("Y-m-d", strtotime($date)) == date("Y-m-d")){
@@ -334,7 +479,12 @@ if(isset($_GET['generate'])){
         "SELECT * FROM attendance_session WHERE session_date=?", [ $date ]
       )->fetch();
 
-      print_r($currentSession);
+      // print_r($currentSession);
+      $checkPresentOut = scanPresentOut($date, $userId);
+      if($checkPresentOut->status){
+        echo $checkPresentOut->data;
+        return true;
+      }
   
       // is date exists on attendance_session
       if($currentSession){
@@ -344,7 +494,7 @@ if(isset($_GET['generate'])){
           [ $currentSession->admin_id ]
         )->fetch();
 
-        print_r($adminData);
+        // print_r($adminData);
 
         $sessionId = $currentSession->id;
         $onTimePresent = $currentSession->present_on_time;
