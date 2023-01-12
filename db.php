@@ -1,8 +1,8 @@
 <?php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'self_project_attendance');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'u349600776_ish');
+define('DB_USER', 'u349600776_ish');
+define('DB_PASS', 'Hostinger2023');
 define('DB_CHAR', 'utf8');
 
 // define('DB_HOST', 'localhost');
