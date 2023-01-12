@@ -12,6 +12,7 @@
     "require": {
         "nyholm/psr7": "^1.5",
         "guzzlehttp/guzzle": "^7.5",
-        "norkunas/onesignal-php-api": "^2.10"
+        "norkunas/onesignal-php-api": "^2.10",
+        "vlucas/phpdotenv": "^5.5"
     }
 }

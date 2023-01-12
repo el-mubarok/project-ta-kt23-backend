@@ -1,15 +1,16 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'u349600776_ish');
-define('DB_USER', 'u349600776_ish');
-define('DB_PASS', 'Hostinger2023');
-define('DB_CHAR', 'utf8');
+use Dotenv\Dotenv;
 
-// define('DB_HOST', 'localhost');
-// define('DB_NAME', 'squidwar_kt23');
-// define('DB_USER', 'squidwar_kt23');
-// define('DB_PASS', 'pdszNTm4H[J9');
-// define('DB_CHAR', 'utf8');
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+$env = $_ENV["mode"];
+
+define('DB_HOST', $_ENV[$env == 'production' ? "DB_HOST_PROD" : "DB_HOST"]);
+define('DB_NAME', $_ENV[$env == 'production' ? "DB_NAME_PROD" : "DB_NAME"]);
+define('DB_USER', $_ENV[$env == 'production' ? "DB_USER_PROD" : "DB_USER"]);
+define('DB_PASS', $_ENV[$env == 'production' ? "DB_PASS_PROD" : "DB_PASS"]);
+define('DB_CHAR', $_ENV[$env == 'production' ? "DB_CHAR_PROD" : "DB_CHAR"]);
 
 class DB
 {
