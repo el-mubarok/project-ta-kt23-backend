@@ -718,12 +718,30 @@ if(isset($_GET['generate'])){
 }else if(isset($_GET['attendance_info'])){
   if(isset($_GET['user_id'])){
     $userId = $_GET['user_id'];
+    
+    if(!isset($_GET['all'])){
+      // only this month
+      // get by current month
+      $monthYearNow = date("Y-m")."%";
+      $stmt = DB::prepare(
+        "SELECT * FROM user_attendance WHERE user_id=:userId 
+        AND session_date LIKE :currentMonthYear"
+      );
+      $stmt->bindParam(":currentMonthYear", $monthYearNow);
+    }else{
+      // all
+      $stmt = DB::prepare(
+        "SELECT * FROM user_attendance WHERE user_id=:userId"
+      );
+      // $stmt->bindParam(":currentMonthYear", $monthYearNow);
+    }
 
-    $data = DB::run(
-      'SELECT * FROM user_attendance_by_user_id WHERE user_id=?', 
-      [$userId]
-    )->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->bindParam(":userId", $userId);
+    $stmt->execute();
+    $stmt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $data = $stmt;
+    
     echo json_encode([
       "code" => 200,
       "data" => $data,
