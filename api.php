@@ -286,28 +286,50 @@ function scanPresentOut($decodedDate, $userId) {
   return (object) $data;
 }
 
+// print_r(
+//   date(
+//     "Y-m-d H:i:s",
+//     strtotime("tomorrow 1am")
+//   )
+// );
+
 if(isset($_GET['generate'])){
+  $atSix = date(
+    "Y-m-d H:i:s", 
+    strtotime('today 6am')
+  );
+  $today = date("Y-m-d H:i:s");
+
+  if($today < $atSix){
+    echo responseError();
+    return true;
+  }
+
+  // print($atSix);
+
   if(isset($_POST["date"]) && isset($_POST["admin_id"])){
     $presentOutAfter = 7;
     $date = $_POST["date"];
     $dateOnly = date("Y-m-d", strtotime($date))."%";
     // $dateOnly = "2022-03-03%";
     $date = date("Y-m-d H:i:s", strtotime($date));
-    $dateEnd = strtotime("$date + 30 minute");
+    
+    // $dateEnd = strtotime("$date + 30 minute");
+    // $dateEnd = date("Y-m-d H:i:s", $dateEnd);
+    // $dateEnd fixed at 8:00
+    $dateEnd = strtotime('today 8am');
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
+    
     $dateEndSession = strtotime("$dateEnd + 10 minute");
     $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
-    $dateOut = strtotime("$date + 7 hour");
+    // $dateEndSession = strtotime('today 8am + 10 minute');
+    // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
+
+    $dateOut = strtotime("$dateEnd + 7 hour");
     $dateOut = date("Y-m-d H:i:s", $dateOut);
+    
     $admin = $_POST["admin_id"];
     $encodedDate = encryptCode($date);
-
-    // check is session date exists
-    // $existedSession = (object) DB::run(
-    //   // "SELECT * FROM attendance_session WHERE session_date=?",
-    //   "SELECT * FROM attendance_session WHERE session_date LIKE ?" 
-    //   [ $dateOnly ]
-    // )->fetch();
 
     $existedSession = DB::prepare(
       "SELECT * FROM attendance_session WHERE session_date 
@@ -317,15 +339,6 @@ if(isset($_GET['generate'])){
     $existedSession->execute();
     $existedSession = $existedSession->fetch();
 
-    // var_dump($existedSession);
-    // return true;
-
-    // session date doesn't exists
-    // create one
-    // if(isset($existedSession->scalar)){
-    //   if(!$existedSession->scalar){
-    //   }
-    // }
     if(!$existedSession){
       $statement = DB::prepare(
         "INSERT INTO attendance_session VALUES (NULL, ?, ?, ?, 0, 0, ?, NULL, NUll)"
@@ -394,11 +407,17 @@ if(isset($_GET['generate'])){
       $isPresentOut = presentOut($existedSession);
 
       if($isPresentOut->status){
+        $peakDate = date(
+          "Y-m-d H:i:s",
+          strtotime("tomorrow 1am")
+        );
+
         echo json_encode([
           "code" => 201,
           "data" => [
             "qr_code" => $isPresentOut->qr_code,
-            "start_date" => $now
+            "start" => $now,
+            "end" => $peakDate
           ],
           "message" => "home attendance session created"
         ], JSON_PRETTY_PRINT);
