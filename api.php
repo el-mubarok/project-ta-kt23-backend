@@ -308,9 +308,9 @@ if(isset($_GET['generate'])){
     "SELECT * FROM session_time"
   )->fetch();
 
-  print_r(
-    $sessionAllowedTime
-  );
+  // print_r(
+  //   $sessionAllowedTime
+  // );
 
   // return true;
 
