@@ -677,7 +677,7 @@ if(isset($_GET['generate'])){
     }
 
     $attempt = updateAttempt($data['device_id'], true);
-    print_r($attempt);
+    // print_r($attempt);
 
     if($attempt != null){
       if($attempt >= 3){
