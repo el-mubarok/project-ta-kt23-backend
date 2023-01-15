@@ -864,4 +864,33 @@ if(isset($_GET['generate'])){
     "data" => $data,
     "message" => "session history info (all)"
   ], JSON_PRETTY_PRINT);
+}else if(isset($_GET['update_status'])){
+  if(isset($_GET['date'])){
+    $date = $_GET['date'];
+    // check is today session available
+    $checkCurrentSession = DB::run(
+      "SELECT * FROM attendance_session 
+      WHERE session_date LIKE '$date%'"
+    )->fetch();
+  
+    if($checkCurrentSession){
+      // update all
+      $result = DB::run(
+        "UPDATE session_detail 
+        SET present_late=? 
+        WHERE attendance_session_id=? 
+        AND present_out_at IS NULL",
+        [ 0, $checkCurrentSession["id"] ]
+      );
+
+      echo json_encode(
+        [
+          "code" => 200,
+          "message" => "attendance status updated"
+        ], JSON_PRETTY_PRINT
+      );
+    }else{
+      echo responseError();
+    }
+  }
 }
