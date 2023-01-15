@@ -342,18 +342,20 @@ if(isset($_GET['generate'])){
     $dateOnly = date("Y-m-d", strtotime($date))."%";
     // $dateOnly = "2022-03-03%";
     $date = date("Y-m-d H:i:s", strtotime($date));
+    $__date = date("Y-m-d", strtotime($date));
     
     // $dateEnd = strtotime("$date + 30 minute");
     // $dateEnd = date("Y-m-d H:i:s", $dateEnd);
     // $dateEnd fixed at 8:00
     // $dateEnd = strtotime('today 8am');
     $dateEnd = strtotime(
-      date("Y-m-d").$sessionAllowedTime["end_session"]
+      $__date.$sessionAllowedTime["end_session"]
     );
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
     
     $dateEndSession = strtotime("$dateEnd + 10 minute");
     $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
+    // print_r($dateEndSession);
     // $dateEndSession = strtotime('today 8am + 10 minute');
     // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
 
