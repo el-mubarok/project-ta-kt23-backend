@@ -690,11 +690,18 @@ if(isset($_GET['generate'])){
           WHERE username=?",
           [$data['device_id'], $data['username']]
         );
+      }else{
+        if($checkDeviceId['device_id'] != $data['device_id']){
+          updateAttempt($data['device_id']);
+          echo responseError(403, 400, "device id not registered for this user");
+          return true;
+        }
       }
     }else{
       // update attempt when error
       updateAttempt($data['device_id']);
       echo responseError(403, 400, "wrong username/password");
+      return true;
     }
 
     $selectedColumn = implode(',', [
