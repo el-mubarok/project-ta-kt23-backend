@@ -321,10 +321,10 @@ if(isset($_GET['generate'])){
   );
   $today = date("Y-m-d H:i:s");
 
-  if($today < $atSix){
-    echo responseError();
-    return true;
-  }
+  // if($today < $atSix){
+  //   echo responseError();
+  //   return true;
+  // }
 
   $sessionAllowedTime = DB::run(
     "SELECT * FROM session_time"
