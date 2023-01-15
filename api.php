@@ -670,22 +670,31 @@ if(isset($_GET['generate'])){
     $checkDeviceId = DB::run(
       "SELECT * FROM user
       WHERE username=?
-      AND device_id=?
       AND role=?",
       [
         $data['username'],
-        $data['device_id'],
         $data['role']
       ]
     )->fetch();
-    if($checkDeviceId['device_id'] == null){
-      // register device id
-      $updatedDeviceId = DB::run(
-        "UPDATE user 
-        SET device_id=?
-        WHERE username=?",
-        [$data['device_id'], $data['username']]
-      );
+    // AND device_id=?
+    // $data['device_id'],
+    // var_dump($checkDeviceId);
+    // return true;
+    if($checkDeviceId){
+      // var_dump($checkDeviceId['device_id'] == null);
+      if($checkDeviceId['device_id'] == null){
+        // register device id
+        $updatedDeviceId = DB::run(
+          "UPDATE user 
+          SET device_id=?
+          WHERE username=?",
+          [$data['device_id'], $data['username']]
+        );
+      }
+    }else{
+      // update attempt when error
+      updateAttempt($data['device_id']);
+      echo responseError(403, 400, "wrong username/password");
     }
 
     $selectedColumn = implode(',', [
