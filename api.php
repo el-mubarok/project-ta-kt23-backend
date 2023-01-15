@@ -144,7 +144,7 @@ function responseError($code = 400, $codeResponse = 400, $message = null){
   ], JSON_PRETTY_PRINT);
 }
 
-function updateAttempt($deviceId) {
+function updateAttempt($deviceId, $checkOnly = false) {
   $check = DB::run(
     "SELECT * FROM login_attempt WHERE device_id=?",
     [$deviceId]
@@ -157,10 +157,26 @@ function updateAttempt($deviceId) {
     $attempt = $check['attempt'];
 
     // echo "last attempt time: $minutesDiff";
-    if($attempt >= 3 && $minutesDiff <= 5){
+    // if($attempt >= 3 && $minutesDiff <= 5){
+    //   // return dont continue
+    //   return $attempt;
+    // }else if($attempt >= 3 && $minutesDiff >= 5){
+    //   // reset
+    //   $stmt = DB::run(
+    //     "UPDATE login_attempt SET attempt=1 WHERE device_id=?", 
+    //     [$deviceId]
+    //   );
+    // }else{
+    //   // do update attempt count
+    //   $stmt = DB::run(
+    //     "UPDATE login_attempt SET attempt=attempt+1 WHERE device_id=?", 
+    //     [$deviceId]
+    //   );
+    // }
+    if($attempt >= 3 && $minutesDiff <= 1){
       // return dont continue
       return $attempt;
-    }else if($attempt >= 3 && $minutesDiff >= 5){
+    }else if($attempt >= 3 && $minutesDiff >= 1){
       // reset
       $stmt = DB::run(
         "UPDATE login_attempt SET attempt=1 WHERE device_id=?", 
@@ -168,15 +184,19 @@ function updateAttempt($deviceId) {
       );
     }else{
       // do update attempt count
-      $stmt = DB::run(
-        "UPDATE login_attempt SET attempt=attempt+1 WHERE device_id=?", 
-        [$deviceId]
-      );
+      if(!$checkOnly){
+        $stmt = DB::run(
+          "UPDATE login_attempt SET attempt=attempt+1 WHERE device_id=?", 
+          [$deviceId]
+        );
+      }
     }
   }else{
     // insert when not found
-    $stmt = DB::prepare("INSERT INTO login_attempt VALUES (NULL, ?, 1, NULL)");
-    $stmt->execute([$deviceId]);
+    if(!$checkOnly){
+      $stmt = DB::prepare("INSERT INTO login_attempt VALUES (NULL, ?, 1, NULL)");
+      $stmt->execute([$deviceId]);
+    }
   }
 
   // check attempt count and return
@@ -185,6 +205,8 @@ function updateAttempt($deviceId) {
     [$deviceId]
   )->fetch();
   $attempt = $check['attempt'];
+
+  // var_dump($attempt);
 
   return $attempt;
 }
@@ -654,17 +676,27 @@ if(isset($_GET['generate'])){
       $data[$req] = $_POST[$req];
     }
 
-    $attempt = DB::run(
-      "SELECT * FROM login_attempt WHERE device_id=?",
-      [$data['device_id']]
-    )->fetch();
+    $attempt = updateAttempt($data['device_id'], true);
+    print_r($attempt);
 
-    if($attempt){
-      if($attempt["attempt"] >= 3){
-        echo responseError(404, 401, "please retry within 5 minutes");
+    if($attempt != null){
+      if($attempt >= 3){
+        echo responseError(404, 401, "please retry within 1 minutes");
         return true;
       }
     }
+
+    // $attempt = DB::run(
+    //   "SELECT * FROM login_attempt WHERE device_id=?",
+    //   [$data['device_id']]
+    // )->fetch();
+
+    // if($attempt){
+    //   if($attempt["attempt"] >= 3){
+    //     echo responseError(404, 401, "please retry within 5 minutes");
+    //     return true;
+    //   }
+    // }
 
     // check is device id registered
     $checkDeviceId = DB::run(
@@ -692,7 +724,6 @@ if(isset($_GET['generate'])){
         );
       }else{
         if($checkDeviceId['device_id'] != $data['device_id']){
-          updateAttempt($data['device_id']);
           echo responseError(403, 400, "device id not registered for this user");
           return true;
         }
