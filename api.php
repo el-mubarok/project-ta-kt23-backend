@@ -189,10 +189,16 @@ function updateAttempt($deviceId) {
   return $attempt;
 }
 
-function presentOut($currentSession) {
+function presentOut($currentSession, $sessionAllowedTime) {
+  // $outDate = date(
+  //   'Y-m-d H:i:s',
+  //   strtotime($currentSession['out_at'])
+  // );
   $outDate = date(
     'Y-m-d H:i:s',
-    strtotime($currentSession['out_at'])
+    strtotime(
+      date("Y-m-d").$sessionAllowedTime['out_session']
+    )
   );
   $now = date("Y-m-d H:i:s");
   $data = [
@@ -286,13 +292,6 @@ function scanPresentOut($decodedDate, $userId) {
   return (object) $data;
 }
 
-// print_r(
-//   date(
-//     "Y-m-d H:i:s",
-//     strtotime("tomorrow 1am")
-//   )
-// );
-
 if(isset($_GET['generate'])){
   $atSix = date(
     "Y-m-d H:i:s", 
@@ -305,7 +304,15 @@ if(isset($_GET['generate'])){
     return true;
   }
 
-  // print($atSix);
+  $sessionAllowedTime = DB::run(
+    "SELECT * FROM session_time"
+  )->fetch();
+
+  print_r(
+    $sessionAllowedTime
+  );
+
+  // return true;
 
   if(isset($_POST["date"]) && isset($_POST["admin_id"])){
     $presentOutAfter = 7;
@@ -317,7 +324,10 @@ if(isset($_GET['generate'])){
     // $dateEnd = strtotime("$date + 30 minute");
     // $dateEnd = date("Y-m-d H:i:s", $dateEnd);
     // $dateEnd fixed at 8:00
-    $dateEnd = strtotime('today 8am');
+    // $dateEnd = strtotime('today 8am');
+    $dateEnd = strtotime(
+      date("Y-m-d").$sessionAllowedTime["end_session"]
+    );
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
     
     $dateEndSession = strtotime("$dateEnd + 10 minute");
@@ -325,7 +335,15 @@ if(isset($_GET['generate'])){
     // $dateEndSession = strtotime('today 8am + 10 minute');
     // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
 
-    $dateOut = strtotime("$dateEnd + 7 hour");
+    if($today >= $dateEndSession){
+      echo responseError(404, 401, "session has ended");
+      return true;
+    }
+
+    // $dateOut = strtotime("$dateEnd + 7 hour");
+    $dateOut = strtotime(
+      date("Y-m-d".$sessionAllowedTime["out_session"])
+    );
     $dateOut = date("Y-m-d H:i:s", $dateOut);
     
     $admin = $_POST["admin_id"];
@@ -404,7 +422,9 @@ if(isset($_GET['generate'])){
       }
 
       // check is present out session
-      $isPresentOut = presentOut($existedSession);
+      $isPresentOut = presentOut(
+        $existedSession, $sessionAllowedTime
+      );
 
       if($isPresentOut->status){
         $peakDate = date(
