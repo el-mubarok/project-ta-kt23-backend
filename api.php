@@ -366,7 +366,8 @@ if(isset($_GET['generate'])){
     );
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
     
-    $dateEndSession = strtotime("$dateEnd + 10 minute");
+    // $dateEndSession = strtotime("$dateEnd + 10 minute");
+    $dateEndSession = strtotime("$dateEnd + 0 minute");
     $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
     // print_r($dateEndSession);
     // $dateEndSession = strtotime('today 8am + 10 minute');
