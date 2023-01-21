@@ -965,7 +965,7 @@ if(isset($_GET['sess'])){
   echo json_encode($sess, JSON_PRETTY_PRINT);
 
   $sess = DB::run(
-    "SELECT * FROM user WHERE id=1"
+    "SELECT * FROM user WHERE role='admin'"
   )->fetch();
 
   echo json_encode($sess, JSON_PRETTY_PRINT);
