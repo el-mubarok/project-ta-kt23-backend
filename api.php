@@ -825,7 +825,7 @@ if(isset($_GET['generate'])){
     if(!isset($_GET['all'])){
       // only this month
       // get by current month
-      $monthYearNow = date("Y-m")."%";
+      $monthYearNow = date("Y/m")."%";
       $stmt = DB::prepare(
         "SELECT * FROM user_attendance WHERE user_id=:userId 
         AND session_date LIKE :currentMonthYear"
