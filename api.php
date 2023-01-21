@@ -374,7 +374,7 @@ if(isset($_GET['generate'])){
     // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
 
     if($today >= $dateEndSession){
-      echo responseError(404, 401, "session has ended");
+      echo responseError(404, 401, "session has ended 10 minutes");
       return true;
     }
 
@@ -436,7 +436,8 @@ if(isset($_GET['generate'])){
       // check is session is end
       // session end after 1 minute from session_date_end
       $sessionEndDate = strtotime(
-        $existedSession['session_date_end']." + 10 minute"
+        // $existedSession['session_date_end']." + 10 minute"
+        $existedSession['session_date_end']." + 0 minute"
       );
       $sessionEndDate = date(
         "Y-m-d H:i:s", $sessionEndDate
