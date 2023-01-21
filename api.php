@@ -979,4 +979,10 @@ if(isset($_GET['sess'])){
   )->fetchAll(PDO::FETCH_ASSOC);
 
   echo json_encode($sess, JSON_PRETTY_PRINT);
+
+  $sess = DB::run(
+    "SELECT * FROM session_detail"
+  )->fetchAll(PDO::FETCH_ASSOC);
+
+  echo json_encode($sess, JSON_PRETTY_PRINT);
 }
