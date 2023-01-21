@@ -563,6 +563,23 @@ if(isset($_GET['generate'])){
         "SELECT * FROM attendance_session WHERE session_date=?", [ $date ]
       )->fetch();
 
+      // check is user available in session_detail
+      // var_dump($currentSession->id);
+      // var_dump($userId);
+      $checkUserIsAvail = DB::run(
+        "SELECT * FROM session_detail WHERE 
+        attendance_session_id=? AND
+        user_id=?", 
+        [ $currentSession->id, $userId ]
+      )->fetch();
+
+      // var_dump($checkUserIsAvail);
+
+      if(!$checkUserIsAvail){
+        echo responseError(401, 400, "You doesn't have exists in this session");
+        return true;
+      }
+
       // print_r($currentSession);
       // (object)["status" => false];
       $checkPresentOut = scanPresentOut($date, $userId);
