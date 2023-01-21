@@ -963,4 +963,10 @@ if(isset($_GET['sess'])){
   )->fetch();
 
   echo json_encode($sess, JSON_PRETTY_PRINT);
+
+  $sess = DB::run(
+    "SELECT * FROM user WHERE id=1"
+  )->fetch();
+
+  echo json_encode($sess, JSON_PRETTY_PRINT);
 }
