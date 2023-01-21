@@ -365,6 +365,11 @@ if(isset($_GET['generate'])){
       $__date.$sessionAllowedTime["end_session"]
     );
     $dateEnd = date("Y-m-d H:i:s", $dateEnd);
+
+    $_outDate = strtotime(
+      $__date.$sessionAllowedTime["out_session"]
+    );
+    $_outDate = date("Y-m-d H:i:s", $_outDate);
     
     // $dateEndSession = strtotime("$dateEnd + 10 minute");
     $dateEndSession = strtotime("$dateEnd + 0 minute");
@@ -373,7 +378,7 @@ if(isset($_GET['generate'])){
     // $dateEndSession = strtotime('today 8am + 10 minute');
     // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
 
-    if($today >= $dateEndSession){
+    if($today >= $dateEndSession && $today <= $_outDate){
       echo responseError(404, 401, "session has ended 10 minutes");
       return true;
     }
