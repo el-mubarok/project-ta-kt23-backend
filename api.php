@@ -10,7 +10,9 @@ use GuzzleHttp\Client;
 
 require __DIR__ . '/vendor/autoload.php';
 require_once 'db.php';
-date_default_timezone_set('Asia/Jakarta');
+// date_default_timezone_set('Asia/Jakarta');
+// Kuala_Lumpur
+date_default_timezone_set('Asia/Kuala_Lumpur');
 header('Content-Type: application/json');
 
 define("NOTIFICATION_NORMAL", "notification");
