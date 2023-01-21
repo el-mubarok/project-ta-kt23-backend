@@ -393,6 +393,7 @@ if(isset($_GET['generate'])){
     $existedSession = $existedSession->fetch();
 
     if(!$existedSession){
+      $date = date("Y-m-d H:i:s", strtotime($date));
       $statement = DB::prepare(
         "INSERT INTO attendance_session VALUES (NULL, ?, ?, ?, 0, 0, ?, NULL, NUll)"
       );
