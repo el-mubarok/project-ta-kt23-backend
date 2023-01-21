@@ -966,7 +966,7 @@ if(isset($_GET['sess'])){
 
   $sess = DB::run(
     "SELECT * FROM user WHERE role='admin'"
-  )->fetch();
+  )->fetchAll(PDO::FETCH_ASSOC);
 
   echo json_encode($sess, JSON_PRETTY_PRINT);
 }
