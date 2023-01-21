@@ -956,5 +956,11 @@ if(isset($_GET['sess'])){
     "SELECT * FROM session_time"
   )->fetch();
 
-  var_dump($sess);
+  echo json_encode($sess, JSON_PRETTY_PRINT);
+
+  $sess = DB::run(
+    "SELECT * FROM attendance_session"
+  )->fetch();
+
+  echo json_encode($sess, JSON_PRETTY_PRINT);
 }
