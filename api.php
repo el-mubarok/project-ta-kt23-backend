@@ -238,79 +238,90 @@ function presentOut($currentSession, $sessionAllowedTime) {
 }
 
 function scanPresentOut($decodedDate, $userId) {
-  $currentSession = (object) DB::run(
+  $currentSession = DB::run(
     "SELECT * FROM attendance_session WHERE out_at=?", 
     [ $decodedDate ]
   )->fetch();
 
+  // var_dump($currentSession);
+
   // check is scan for home attend
-  $_now = date("Y-m-d H:i:s");
-  $_sessionOutAt = date(
-    "Y-m-d H:i:s", 
-    strtotime($currentSession->out_at)
-  );
-  $_sessionOutAtEncoded = encryptCode(
-    $currentSession->out_at
-  );
-  $encodedDate = encryptCode($decodedDate);
-  $data = [
-    "status" => false
-  ];
-  $sessionId = $currentSession->id;
+  if($currentSession){
+    $_now = date("Y-m-d H:i:s");
+    $currentSession = (object) $currentSession;
+    $_sessionOutAt = date(
+      "Y-m-d H:i:s", 
+      strtotime($currentSession->out_at)
+    );
+    $_sessionOutAtEncoded = encryptCode(
+      $currentSession->out_at
+    );
+    $encodedDate = encryptCode($decodedDate);
+    $data = [
+      "status" => false
+    ];
+    $sessionId = $currentSession->id;
 
-  if($_now >= $_sessionOutAt){
-    $isUserAvail = DB::run(
-      "SELECT * FROM session_detail WHERE user_id=?", [ $userId ]
-    )->fetch();
-    
-    if($isUserAvail){
-      if($isUserAvail['present_out_at'] != null){
-        $data["status"] = true;
-        $data["data"] = responseError(401, 200);
-        return (object) $data;
+    if($_now >= $_sessionOutAt){
+      $isUserAvail = DB::run(
+        "SELECT * FROM session_detail WHERE user_id=?", [ $userId ]
+      )->fetch();
+      
+      if($isUserAvail){
+        if($isUserAvail['present_out_at'] != null){
+          $data["status"] = true;
+          $data["data"] = responseError(
+            401, 200, 
+            "You've already attended"
+          );
+          return (object) $data;
+        }
       }
-    }
 
-    $adminData = (object) DB::run(
-      "SELECT * FROM user WHERE id=?", 
-      [ $currentSession->admin_id ]
-    )->fetch();
+      $adminData = (object) DB::run(
+        "SELECT * FROM user WHERE id=?", 
+        [ $currentSession->admin_id ]
+      )->fetch();
 
-    $updatedAttendanceSession = DB::run(
-      "UPDATE session_detail 
-      SET present_out_at=?
-      WHERE attendance_session_id=? AND user_id=?",
-      [ $_now, $sessionId, $userId ]
-    );
+      $updatedAttendanceSession = DB::run(
+        "UPDATE session_detail 
+        SET present_out_at=?
+        WHERE attendance_session_id=? AND user_id=?",
+        [ $_now, $sessionId, $userId ]
+      );
 
-    $notificationResult = sendNotification(
-      NOTIFICATION_SILENT,
-      $adminData->messaging_id,
-      [
-        "qr_code" => $encodedDate,
-        "present_on_time" => $currentSession->present_on_time,
-        "present_late" => $currentSession->present_late,
-        "created" => date("Y-m-d H:i:s")
-      ]
-    );
-
-    $data["status"] = true;
-    $data["data"] = json_encode([
-      "code" => 200,
-      "data" => [
-        "notification" => $notificationResult,
-        "additional_data" => [
-          "qr_code" => $_sessionOutAtEncoded,
+      $notificationResult = sendNotification(
+        NOTIFICATION_SILENT,
+        $adminData->messaging_id,
+        [
+          "qr_code" => $encodedDate,
           "present_on_time" => $currentSession->present_on_time,
           "present_late" => $currentSession->present_late,
           "created" => date("Y-m-d H:i:s")
         ]
-      ],
-      "message" => "scan done"
-    ], JSON_PRETTY_PRINT);
+      );
+
+      $data["status"] = true;
+      $data["data"] = json_encode([
+        "code" => 200,
+        "data" => [
+          "notification" => $notificationResult,
+          "additional_data" => [
+            "qr_code" => $_sessionOutAtEncoded,
+            "present_on_time" => $currentSession->present_on_time,
+            "present_late" => $currentSession->present_late,
+            "created" => date("Y-m-d H:i:s")
+          ]
+        ],
+        "message" => "scan done"
+      ], JSON_PRETTY_PRINT);
+    }else{
+      $data["status"] = false;
+    }
   }else{
     $data["status"] = false;
   }
+
   return (object) $data;
 }
 
@@ -543,6 +554,7 @@ if(isset($_GET['generate'])){
       )->fetch();
 
       // print_r($currentSession);
+      // (object)["status" => false];
       $checkPresentOut = scanPresentOut($date, $userId);
       if($checkPresentOut->status){
         echo $checkPresentOut->data;
@@ -595,8 +607,10 @@ if(isset($_GET['generate'])){
 
         if($isUserAvail){
           // check is on_time and late 0 or 1
+          // if($isUserAvail['present_on_time'] == 0 && 
+          //   $isUserAvail['present_late'] == 0){
           if($isUserAvail['present_on_time'] == 0 && 
-            $isUserAvail['present_late'] == 0){
+            $isUserAvail['present_late'] == 1){
             // do nothing
           }else {
             echo responseError(401, 200);
