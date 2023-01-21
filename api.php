@@ -408,6 +408,7 @@ if(isset($_GET['generate'])){
     $existedSession = $existedSession->fetch();
 
     // var_dump($existedSession);
+    $outSessionDate = $existedSession['out_at'];
 
     if(!$existedSession){
       $date = date("Y-m-d H:i:s", strtotime($date));
@@ -441,7 +442,8 @@ if(isset($_GET['generate'])){
           "qr_code" => $encodedDate,
           "start" => $date,
           "end" => $dateEnd,
-          "end_session" => $dateEndSession
+          "end_session" => $dateEndSession,
+          "out_session" => $outSessionDate,
         ],
         "message" => "session created"
       ], JSON_PRETTY_PRINT);
@@ -509,6 +511,7 @@ if(isset($_GET['generate'])){
         "start" => $existedSession["session_date"],
         "end" => $existedSession["session_date_end"],
         "end_session" => $dateEndSession,
+        "out_session" => $outSessionDate,
       ],
       "message" => "session created"
     ], JSON_PRETTY_PRINT);
