@@ -842,10 +842,16 @@ if(isset($_GET['generate'])){
     $stmt->bindParam(":userId", $userId);
     $stmt->execute();
     $stmt = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $data = $stmt;
 
     // var_dump($stmt);
+    for($i=0; $i<count($data); $i++){
+      $data[$i]["session_date"] = date(
+        "Y-m-d", strtotime($data[$i]["session_date"])
+      );
+    }
 
-    $data = $stmt;
     
     echo json_encode([
       "code" => 200,
