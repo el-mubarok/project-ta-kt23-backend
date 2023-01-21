@@ -842,6 +842,8 @@ if(isset($_GET['generate'])){
     $stmt->execute();
     $stmt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    var_dump($stmt);
+
     $data = $stmt;
     
     echo json_encode([
