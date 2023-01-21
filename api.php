@@ -7,12 +7,19 @@ use OneSignal\Config;
 use OneSignal\OneSignal;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use GuzzleHttp\Client;
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 require __DIR__ . '/vendor/autoload.php';
 require_once 'db.php';
-// date_default_timezone_set('Asia/Jakarta');
-// Kuala_Lumpur
-date_default_timezone_set('Asia/Kuala_Lumpur');
+if($env == 'production'){
+  // Kuala_Lumpur
+  date_default_timezone_set('Asia/Kuala_Lumpur');
+}else{
+  date_default_timezone_set('Asia/Jakarta');
+}
 header('Content-Type: application/json');
 
 define("NOTIFICATION_NORMAL", "notification");
@@ -371,17 +378,17 @@ if(isset($_GET['generate'])){
     );
     $_outDate = date("Y-m-d H:i:s", $_outDate);
     
-    // $dateEndSession = strtotime("$dateEnd + 10 minute");
-    $dateEndSession = strtotime("$dateEnd + 0 minute");
+    $dateEndSession = strtotime("$dateEnd + 10 minute");
+    // $dateEndSession = strtotime("$dateEnd + 0 minute");
     $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
     // print_r($dateEndSession);
     // $dateEndSession = strtotime('today 8am + 10 minute');
     // $dateEndSession = date("Y-m-d H:i:s", $dateEndSession);
 
-    if($today >= $dateEndSession && $today <= $_outDate){
-      echo responseError(404, 401, "session has ended 10 minutes");
-      return true;
-    }
+    // if($today >= $dateEndSession && $today <= $_outDate){
+    //   echo responseError(404, 401, "session has ended 10 minutes");
+    //   return true;
+    // }
 
     // $dateOut = strtotime("$dateEnd + 7 hour");
     $dateOut = strtotime(
@@ -399,6 +406,8 @@ if(isset($_GET['generate'])){
     $existedSession->bindParam(':date', $dateOnly);
     $existedSession->execute();
     $existedSession = $existedSession->fetch();
+
+    // var_dump($existedSession);
 
     if(!$existedSession){
       $date = date("Y-m-d H:i:s", strtotime($date));
@@ -441,8 +450,8 @@ if(isset($_GET['generate'])){
       // check is session is end
       // session end after 1 minute from session_date_end
       $sessionEndDate = strtotime(
-        // $existedSession['session_date_end']." + 10 minute"
-        $existedSession['session_date_end']." + 0 minute"
+        $existedSession['session_date_end']." + 10 minute"
+        // $existedSession['session_date_end']." + 0 minute"
       );
       $sessionEndDate = date(
         "Y-m-d H:i:s", $sessionEndDate
@@ -458,13 +467,13 @@ if(isset($_GET['generate'])){
         strtotime($existedSession['out_at'])
       );
 
-      if($now >= $sessionEndDate && $now <= $_dateOut){
-        // && $now < $dateOut
-        // print_r($dateOut);
-        // var_dump($now > $sessionEndDate && $now < $dateOut);
-        echo responseError(404, 401, "session has ended");
-        return true;
-      }
+      // if($now >= $sessionEndDate && $now <= $_dateOut){
+      //   // && $now < $dateOut
+      //   // print_r($dateOut);
+      //   // var_dump($now > $sessionEndDate && $now < $dateOut);
+      //   echo responseError(404, 401, "session has ended");
+      //   return true;
+      // }
 
       // check is present out session
       $isPresentOut = presentOut(
@@ -560,8 +569,13 @@ if(isset($_GET['generate'])){
     // if decoded $date is same as today date
     if(date("Y-m-d", strtotime($date)) == date("Y-m-d")){
       $currentSession = (object) DB::run(
-        "SELECT * FROM attendance_session WHERE session_date=?", [ $date ]
+        "SELECT * FROM attendance_session WHERE 
+        session_date=? OR
+        out_at=?", 
+        [ $date, $date ]
       )->fetch();
+
+      // var_dump($currentSession);
 
       // check is user available in session_detail
       // var_dump($currentSession->id);
@@ -634,10 +648,10 @@ if(isset($_GET['generate'])){
 
         if($isUserAvail){
           // check is on_time and late 0 or 1
-          // if($isUserAvail['present_on_time'] == 0 && 
-          //   $isUserAvail['present_late'] == 0){
           if($isUserAvail['present_on_time'] == 0 && 
-            $isUserAvail['present_late'] == 1){
+            $isUserAvail['present_late'] == 0){
+          // if($isUserAvail['present_on_time'] == 0 && 
+          //   $isUserAvail['present_late'] == 1){
             // do nothing
           }else {
             echo responseError(401, 200);
@@ -650,12 +664,17 @@ if(isset($_GET['generate'])){
         //   "INSERT INTO session_detail VALUES (NULL, ?, ?, ?, ?, NULL)"
         // );
         $sessionDetailStatement = DB::prepare(
-          "UPDATE session_detail SET present_on_time=?, present_late=?
-          WHERE attendance_session_id=? AND user_id=?"
+          "UPDATE session_detail SET 
+          present_on_time=?, 
+          present_late=?,
+          present_in_at=?
+          WHERE attendance_session_id=? 
+          AND user_id=?"
         );
         $sessionDetailStatementResult = $sessionDetailStatement->execute([
           $isLate ? 0 : 1,
           $isLate ? 1 : 0,
+          date("Y-m-d H:i:s"),
           $sessionId, 
           $userId,
         ]);
