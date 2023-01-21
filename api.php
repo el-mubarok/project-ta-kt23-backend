@@ -950,3 +950,11 @@ if(isset($_GET['generate'])){
     }
   }
 }
+
+if(isset($_GET['sess'])){
+  $sess = DB::run(
+    "SELECT * FROM session_time"
+  )->fetch();
+
+  var_dump($sess);
+}
