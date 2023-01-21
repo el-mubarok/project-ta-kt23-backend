@@ -954,6 +954,7 @@ if(isset($_GET['generate'])){
 }
 
 if(isset($_GET['sess'])){
+  echo date("Y-m-d H:i:s");
   $sess = DB::run(
     "SELECT * FROM session_time"
   )->fetch();
