@@ -873,9 +873,23 @@ if(isset($_GET['generate'])){
     if(!isset($_GET['all'])){
       // only this month
       // get by current month
-      $monthYearNow = date("Y/m")."%";
+      // $monthYearNow = date("Y/m")."%";
+      // $monthYearNow = date("Y-m")."%";
+      if($env == 'production'){
+        $monthYearNow = date("Y/m")."%";
+      }else{
+        $monthYearNow = date("Y-m")."%";
+      }
       $stmt = DB::prepare(
-        "SELECT * FROM user_attendance WHERE user_id=:userId 
+        // "SELECT * FROM user_attendance WHERE user_id=:userId 
+        // AND session_date LIKE :currentMonthYear"
+        "SELECT
+        user_id, full_name, session_id, session_date,
+        SUM(present_on_time) as present_on_time, 
+        SUM(present_late) as present_late, 
+        SUM(not_present) as not_present,
+        present_out_at
+        FROM user_attendance WHERE user_id=:userId 
         AND session_date LIKE :currentMonthYear"
       );
       $stmt->bindParam(":currentMonthYear", $monthYearNow);
